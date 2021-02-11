@@ -10,7 +10,9 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/partyzanex/http-mpx/internal/server"
+	"github.com/partyzanex/http-mpx/api"
+	"github.com/partyzanex/http-mpx/api/fetch"
+	"github.com/partyzanex/http-mpx/api/middleware"
 	"github.com/partyzanex/http-mpx/pkg/fetcher/basehttp"
 )
 
@@ -25,15 +27,22 @@ func main() {
 
 	flag.Parse()
 
-	// create anb server instance
-	srv := server.New(server.Config{
-		Addr:      *addr,
-		Outgoing:  *outgoing,
-		MaxURls:   *maxURLs,
-		RateLimit: *rateLimit,
-		Timeout:   *timeout,
-		Fetcher:   basehttp.New(nil),
-	})
+	fetchConfig := fetch.Config{
+		Outgoing: *outgoing,
+		MaxURls:  *maxURLs,
+		Timeout:  *timeout,
+	}
+	fetchHandler := api.New(
+		fetch.NewHandler(fetchConfig, basehttp.New(nil)),
+		middleware.Logger, middleware.ConcurrentLimiter(*rateLimit),
+		middleware.AllowedMethods(http.MethodPost),
+		middleware.Recover, middleware.ErrorHandler,
+	)
+
+	server := http.Server{
+		Addr:    *addr,
+		Handler: fetchHandler,
+	}
 
 	// graceful shutdown
 	idleConnsClosed := make(chan struct{})
@@ -43,7 +52,7 @@ func main() {
 		signal.Notify(quit, os.Interrupt)
 		<-quit
 
-		if err := srv.Shutdown(context.Background()); err != nil {
+		if err := server.Shutdown(context.Background()); err != nil {
 			// Error from closing listeners, or context timeout:
 			log.Printf("HTTP server Shutdown: %v", err)
 		}
@@ -53,7 +62,7 @@ func main() {
 
 	log.Println("Listen on", *addr)
 	// run server
-	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatalf("cannot run server: %s", err)
 	}
 

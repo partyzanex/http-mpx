@@ -1,4 +1,4 @@
-package server
+package api
 
 // Error represents a custom error for HTTP-response.
 type Error struct {
