@@ -11,10 +11,12 @@ import (
 	"github.com/partyzanex/http-mpx/pkg/types"
 )
 
+// httpFetcher implements of fetcher.Interface.
 type httpFetcher struct {
 	*http.Client
 }
 
+// New creates a fetcher.Interface instance.
 func New(client *http.Client) fetcher.Interface {
 	if client == nil {
 		client = http.DefaultClient
@@ -25,6 +27,7 @@ func New(client *http.Client) fetcher.Interface {
 	}
 }
 
+//nolint:nakedret
 func (c *httpFetcher) Fetch(ctx context.Context, req types.Request) (result *types.Result, err error) {
 	method := req.Method
 

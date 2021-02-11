@@ -19,12 +19,13 @@ func main() {
 		addr      = flag.String("addr", "0.0.0.0:3000", "address")
 		outgoing  = flag.Int("outgoing", 4, "maximum of outgoing requests per connection")
 		maxURLs   = flag.Int("max-urls", 20, "maximum of requested URLs per request")
-		rateLimit = flag.Int64("rate-limit", 100, "rate limit")
+		rateLimit = flag.Int("rate-limit", 100, "rate limit")
 		timeout   = flag.Duration("timeout", time.Second, "timeout for one request")
 	)
 
 	flag.Parse()
 
+	// create anb server instance
 	srv := server.New(server.Config{
 		Addr:      *addr,
 		Outgoing:  *outgoing,
@@ -50,7 +51,7 @@ func main() {
 		close(idleConnsClosed)
 	}()
 
-	log.Println("Run server on", *addr)
+	log.Println("Listen on", *addr)
 	// run server
 	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatalf("cannot run server: %s", err)

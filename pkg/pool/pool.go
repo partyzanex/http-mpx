@@ -2,10 +2,10 @@ package pool
 
 import "sync"
 
-// WorkerFn.
+// WorkerFn is func for concurrently execution.
 type WorkerFn func()
 
-// Pool.
+// Pool represents a control component for WorkerFn.
 type Pool struct {
 	size    int
 	workers chan WorkerFn
@@ -21,7 +21,7 @@ func (wp *Pool) start() {
 	}
 }
 
-// worker get function from workers queue and executes it
+// worker get function from workers queue and executes it.
 func (wp *Pool) worker() {
 	defer wp.wg.Done()
 

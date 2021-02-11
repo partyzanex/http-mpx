@@ -8,51 +8,56 @@ import (
 	"strings"
 
 	"github.com/partyzanex/http-mpx/pkg/limiter"
-
 	"github.com/partyzanex/http-mpx/pkg/pool"
 	"github.com/partyzanex/http-mpx/pkg/types"
 )
 
-type Handler struct {
-	Config
+const errFormat = "error: code=%d message=%s internal=%v"
 
+// Handler implements of http.Handler interface.
+type Handler struct {
+	// Config is embed Config
+	Config
+	// limiter for calls count restriction
 	limiter limiter.Limiter
 }
 
+// ServeHTTP implements of http.Handler interface.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// recover
 	defer func() {
 		if rec := recover(); rec != nil {
 			log.Println("recovered", rec)
 		}
 	}()
 
+	// apply limiter
 	if !h.limiter.Allow() {
 		w.WriteHeader(http.StatusTooManyRequests)
 		return
 	}
 
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
+	// take a limit of calls
+	release := h.limiter.Take()
+	defer release()
 
-		e := json.NewEncoder(w).Encode(Error{
+	// check HTTP-method
+	if r.Method != http.MethodPost {
+		h.writeError(w, &Error{
+			Code:    http.StatusMethodNotAllowed,
 			Message: "method not allowed",
 		})
-		if e != nil {
-			log.Println("cannot encode to json:", e)
-		}
-
 		return
 	}
 
+	// write Content-Type header
 	w.Header().Add("Content-Type", "application/json")
 
+	// execute request
 	err := h.Handle(w, r)
 	if err != nil {
+		// handle error
 		var logErr *Error
-
-		defer func() {
-			log.Printf("error: code=%d message=%s internal=%v", logErr.Code, logErr.Message, logErr.Internal)
-		}()
 
 		switch er := err.(type) {
 		case *Error:
@@ -64,17 +69,24 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		w.WriteHeader(logErr.Code)
-
-		errWr := json.NewEncoder(w).Encode(logErr)
-		if errWr != nil {
-			log.Println("cannot encode to json:", errWr)
-		}
-
+		h.writeError(w, logErr)
 		return
 	}
 }
 
+// writeError writes error in JSON to response
+func (*Handler) writeError(w http.ResponseWriter, e *Error) {
+	defer log.Printf(errFormat, e.Code, e.Message, e.Internal)
+
+	w.WriteHeader(e.Code)
+
+	err := json.NewEncoder(w).Encode(e)
+	if err != nil {
+		log.Println("cannot encode to json:", err)
+	}
+}
+
+// Handle is handler of requests
 func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) error {
 	var requests types.Requests
 
@@ -84,14 +96,18 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) error {
 			SetInternal(err)
 	}
 
+	defer r.Body.Close()
+
 	if len(requests) > h.MaxURls {
 		return NewError(http.StatusRequestEntityTooLarge, "large count of requests")
 	}
 
-	p := pool.New(h.Outgoing)
-	count := len(requests)
-	results := make([]*types.Result, count)
-	errs := make([]error, count)
+	var (
+		p       = pool.New(h.Outgoing)
+		count   = len(requests)
+		results = make([]*types.Result, count)
+		errs    = make([]error, count)
+	)
 
 	for i, request := range requests {
 		n := i

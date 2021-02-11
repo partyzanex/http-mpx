@@ -6,12 +6,18 @@ import (
 	"github.com/partyzanex/http-mpx/pkg/fetcher"
 )
 
+// Config represent a configuration for http.Server.
 type Config struct {
+	// Addr is a listen address
 	Addr string
-
-	Outgoing  int
-	MaxURls   int
-	RateLimit int64
+	// Outgoing is a count of maximum outgoing requests
+	// for each incoming request
+	Outgoing int
+	// MaxURls is a count of maximum URLs
+	// in each incoming request
+	MaxURls int
+	// RateLimit is a count of maximum incoming
+	RateLimit int
 	Timeout   time.Duration
 
 	Fetcher fetcher.Interface
