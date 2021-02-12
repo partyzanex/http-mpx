@@ -1,55 +1,99 @@
 package pool
 
-import "sync"
+import (
+	"context"
+	"sync/atomic"
+)
 
 // WorkerFn is func for concurrently execution.
-type WorkerFn func()
+type Worker func()
 
 // Pool represents a control component for WorkerFn.
 type Pool struct {
-	size    int
-	workers chan WorkerFn
-	wg      *sync.WaitGroup
+	// count of executed WorkerFn at one time
+	size int32
+	// atomic counter completed workers
+	counter int32
+	// workers queue
+	workers chan Worker
+	// wait channel
+	wait chan struct{}
+	// context for exit
+	ctx context.Context
 }
 
-// start launches required number of goroutines.
-func (wp *Pool) start() {
-	wp.wg.Add(wp.size)
+// done decrements cnt and check it
+// if cnt less or equal than 0 send to wait for unlock.
+func (p *Pool) done() {
+	atomic.AddInt32(&p.counter, -1)
 
-	for i := 0; i < wp.size; i++ {
-		go wp.worker()
+	if p.counter <= 0 {
+		// unlock wait
+		p.wait <- struct{}{}
 	}
 }
 
 // worker get function from workers queue and executes it.
-func (wp *Pool) worker() {
-	defer wp.wg.Done()
+func (p *Pool) worker() {
+	defer p.done()
 
-	for fn := range wp.workers {
-		fn()
+	for {
+		select {
+		case <-p.ctx.Done():
+			return
+		case fn, ok := <-p.workers:
+			if fn != nil {
+				fn()
+			}
+
+			if ok {
+				continue
+			}
+
+			return
+		}
 	}
 }
 
 // Add appends worker func to execution queue.
-func (wp *Pool) Add(fn WorkerFn) {
-	wp.workers <- fn
+func (p *Pool) Add(fn Worker) {
+	select {
+	case <-p.ctx.Done():
+		return
+	case p.workers <- fn:
+	}
 }
 
 // Wait locks execution until all workers complete.
-func (wp *Pool) Wait() {
-	close(wp.workers)
-	wp.wg.Wait()
+func (p *Pool) Wait() {
+	close(p.workers)
+	<-p.wait
 }
 
 // NewWorkersPool creates *WorkersPool and starts workers pool.
-func New(size int) *Pool {
-	wp := &Pool{
-		size:    size,
-		workers: make(chan WorkerFn),
-		wg:      &sync.WaitGroup{},
+func New(size int, options ...Option) *Pool {
+	p := &Pool{
+		size: int32(size),
+		wait: make(chan struct{}, 1),
+		ctx:  context.Background(),
 	}
 
-	go wp.start()
+	// apply options
+	for _, option := range options {
+		option(p)
+	}
 
-	return wp
+	if p.workers == nil {
+		p.workers = make(chan Worker)
+	}
+
+	go func() {
+		atomic.AddInt32(&p.counter, p.size)
+
+		for i := int32(0); i < p.size; i++ {
+			go p.worker()
+		}
+	}()
+
+	return p
 }
