@@ -10,7 +10,7 @@ import (
 
 func TestConcurrent_Take(t *testing.T) {
 	limit := 1000
-	lm := limiter.New(limit)
+	lm := limiter.Concurrent(limit)
 	counter := int32(0)
 
 	fn := func() {
@@ -25,6 +25,7 @@ func TestConcurrent_Take(t *testing.T) {
 		}
 	}
 	wg := sync.WaitGroup{}
+	defer wg.Wait()
 
 	for i := 0; i < 100000; i++ {
 		wg.Add(1)
@@ -34,6 +35,4 @@ func TestConcurrent_Take(t *testing.T) {
 			fn()
 		}()
 	}
-
-	wg.Wait()
 }

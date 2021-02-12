@@ -7,8 +7,8 @@ type concurrent struct {
 	stack chan struct{}
 }
 
-// New create a new Limiter instance.
-func New(limit int) Limiter {
+// Concurrent create a new Limiter instance.
+func Concurrent(limit int) Limiter {
 	return &concurrent{
 		limit: limit,
 		stack: make(chan struct{}, limit),

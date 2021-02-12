@@ -11,7 +11,7 @@ import (
 // inside which the limiter is implemented.
 func ConcurrentLimiter(limit int) api.Middleware {
 	return func(next api.Handler) api.Handler {
-		lm := limiter.New(limit)
+		lm := limiter.Concurrent(limit)
 
 		return func(w http.ResponseWriter, r *http.Request) error {
 			// apply limiter
