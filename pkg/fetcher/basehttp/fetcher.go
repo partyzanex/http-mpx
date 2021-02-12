@@ -22,13 +22,11 @@ func New(client *http.Client) fetcher.Interface {
 		client = http.DefaultClient
 	}
 
-	return &httpFetcher{
-		Client: client,
-	}
+	return &httpFetcher{client}
 }
 
-//nolint:nakedret
-func (c *httpFetcher) Fetch(ctx context.Context, req types.Request) (result *types.Result, err error) {
+// Fetch takes a types.Request, execute HTTP-request and returns *types.Result or error.
+func (c *httpFetcher) Fetch(ctx context.Context, req types.Request) (*types.Result, error) {
 	method := req.Method
 
 	if method == "" {
@@ -47,19 +45,28 @@ func (c *httpFetcher) Fetch(ctx context.Context, req types.Request) (result *typ
 		return nil, fmt.Errorf("cannot load response: %s", err)
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+		erc := resp.Body.Close()
 
+		if err == nil {
+			err = erc
+		}
+	}()
+
+	return c.handleResponse(resp)
+}
+
+// handleResponse parses *http.Response body and returns *types.Result or error
+func (*httpFetcher) handleResponse(resp *http.Response) (*types.Result, error) {
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read response body: %s", err)
 	}
 
-	result = &types.Result{
-		URL:        req.URL,
+	return &types.Result{
+		URL:        resp.Request.URL.String(),
 		StatusCode: resp.StatusCode,
 		Headers:    resp.Header,
 		Body:       body,
-	}
-
-	return
+	}, nil
 }
