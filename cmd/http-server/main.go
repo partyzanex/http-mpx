@@ -32,8 +32,8 @@ func main() {
 		MaxURls:  *maxURLs,
 		Timeout:  *timeout,
 	}
-	fetchHandler := api.New(
-		fetch.NewHandler(fetchConfig, basehttp.New(nil)),
+	fetchHandler := api.Wrap(
+		fetch.GetHandler(fetchConfig, basehttp.New(nil)),
 		middleware.Logger, middleware.ConcurrentLimiter(*rateLimit),
 		middleware.AllowedMethods(http.MethodPost),
 		middleware.Recover, middleware.ErrorHandler,

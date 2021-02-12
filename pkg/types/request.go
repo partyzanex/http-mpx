@@ -4,9 +4,6 @@ import (
 	"net/http"
 )
 
-// Requests represents a list of *Request.
-type Requests []*Request
-
 // Request represents a minimal request item for each URL
 // that can be requested.
 type Request struct {

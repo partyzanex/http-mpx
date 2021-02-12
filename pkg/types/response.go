@@ -2,7 +2,7 @@ package types
 
 import "net/http"
 
-// Result represents a result item that is to be returned as a response
+// Result represents a result item that is to be returned as a response.
 type Result struct {
 	// requested URL
 	URL string `json:"url"`

@@ -12,7 +12,7 @@ const errFormat = "error: code=%d message=%s internal=%v"
 
 // ErrorHandler implements a api.Middleware function
 // that handles the error returned by the wrapped handler
-// and write it to response in JSON format
+// and write it to response in JSON format.
 func ErrorHandler(next api.Handler) api.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		err := next(w, r)

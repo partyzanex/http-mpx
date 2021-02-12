@@ -15,3 +15,8 @@ type Config struct {
 	// Timeout is a wait time for each outgoing request
 	Timeout time.Duration
 }
+
+const (
+	MsgDecodeRequest = "cannot decode request"
+	MsgLargeRequest  = "large count of requests"
+)
