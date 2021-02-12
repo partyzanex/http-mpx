@@ -1,9 +1,9 @@
 package limiter
 
-// Release func
+// Release func.
 type Release func()
 
-// Limiter interface
+// Limiter interface.
 type Limiter interface {
 	// Allow should be checks if Take call available
 	// if return false, Take will lock
