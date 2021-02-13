@@ -46,3 +46,72 @@ make docker-run
 # удаление контейнера и удаление образа
 make clean
 ```
+
+### Отправка запроса
+
+```bash
+curl --location --request POST 'localhost:3000/' \
+--header 'Content-Type: application/json' \
+--data-raw '[
+    {
+        "url": "http://yandex.ru/"
+    },
+    {
+        "url": "http://ya.ru/"
+    },
+    {
+        "url": "http://ya.ru/",
+        "method": "POST",
+        "headers": {
+            "X-Frame-Options": [
+                "DENY"
+            ]
+        },
+        "body": "WzEsMiwzXQ=="
+    },
+    {
+        "url": "http://google.com/"
+    }
+]'
+```
+Ответ:
+```json
+[
+    {
+        "url": "https://yandex.ru/",
+        "status_code": 200,
+        "headers": {
+            "Accept-Ch": [
+                "Viewport-Width, DPR, Device-Memory, RTT, Downlink, ECT"
+            ],
+            "Accept-Ch-Lifetime": [
+                "31536000"
+            ],
+            "Cache-Control": [
+                "no-cache,no-store,max-age=0,must-revalidate"
+            ],
+            ...
+        },
+        "body": "PCFET0NUWVBFIGh0bWw...HRtbD4="
+    },
+    ...
+    {
+        "url": "http://ya.ru/",
+        "status_code": 403,
+        "headers": {
+            "Content-Type": [
+                "text/html; charset=utf-8"
+            ],
+            "Date": [
+                "Sat, 13 Feb 2021 01:06:07 GMT"
+            ],
+            "Etag": [
+                "W/\"60254eed-3077\""
+            ],
+            ...
+        },
+        "body": "PCFET0NUWVBFIGh0bWw...HRtbD4="
+    },
+    ...
+]
+```
