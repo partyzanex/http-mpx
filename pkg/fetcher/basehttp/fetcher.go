@@ -56,7 +56,7 @@ func (c *httpFetcher) Fetch(ctx context.Context, req types.Request) (*types.Resu
 	return c.handleResponse(resp)
 }
 
-// handleResponse parses *http.Response body and returns *types.Result or error
+// handleResponse parses *http.Response body and returns *types.Result or error.
 func (*httpFetcher) handleResponse(resp *http.Response) (*types.Result, error) {
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {

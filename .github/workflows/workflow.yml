@@ -1,0 +1,57 @@
+name: Workflow
+
+on:
+  push:
+  release:
+
+jobs:
+  linter:
+    name: Lint code base
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: v1.36.0
+          args: -E wsl,whitespace,unparam,unconvert,testpackage,stylecheck,scopelint,rowserrcheck,prealloc,nolintlint,nestif,nakedret,misspell,maligned,lll,interfacer,gosec,goprintffuncname,gomodguard,gomnd,golint,goimports,gofmt,godox,godot,gocyclo,gocritic,goconst,gocognit,gochecknoinits,gochecknoglobals,funlen,dupl,dogsled,depguard,bodyclose,asciicheck
+  test-and-build:
+    needs:
+      - linter
+    strategy:
+      matrix:
+        go-version: [ 1.15.x ]
+        os: [ macos-latest, ubuntu-latest, windows-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Test
+        run: go test -v ./...
+      - name: Build
+        run: go build -o ./build/http-server ./cmd/http-server/
+  docker-build:
+    needs:
+      - linter
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Build
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./cmd/http-server/Dockerfile
+          platforms: linux/amd64
+          push: false
+          tags: partyzanex/http-mpx:latest

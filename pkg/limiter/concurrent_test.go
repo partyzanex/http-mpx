@@ -25,7 +25,6 @@ func TestConcurrent_Take(t *testing.T) {
 		}
 	}
 	wg := sync.WaitGroup{}
-	defer wg.Wait()
 
 	for i := 0; i < 100000; i++ {
 		wg.Add(1)
@@ -35,4 +34,6 @@ func TestConcurrent_Take(t *testing.T) {
 			fn()
 		}()
 	}
+
+	wg.Wait()
 }

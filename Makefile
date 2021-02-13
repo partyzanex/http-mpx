@@ -1,3 +1,7 @@
+.PHONY: lint
+lint:
+	golangci-lint run -E wsl,whitespace,unparam,unconvert,testpackage,stylecheck,scopelint,rowserrcheck,prealloc,nolintlint,nestif,nakedret,misspell,maligned,lll,interfacer,gosec,goprintffuncname,gomodguard,gomnd,golint,goimports,gofmt,godox,godot,gocyclo,gocritic,goconst,gocognit,gochecknoinits,gochecknoglobals,funlen,dupl,dogsled,depguard,bodyclose,asciicheck
+
 .PHONY: test
 test:
 	go test -v ./... -count=1
