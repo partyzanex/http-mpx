@@ -15,25 +15,14 @@ import (
 // GetHandler returns api.Handler function.
 func GetHandler(config Config, f fetcher.Interface) api.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		var requests []*types.Request
-
-		// decode request
-		err := json.NewDecoder(r.Body).Decode(&requests)
+		requests, count, err := parseRequest(&config, r)
 		if err != nil {
-			return api.NewError(http.StatusBadRequest, MsgDecodeRequest).
-				SetInternal(err)
-		}
-
-		count := len(requests)
-
-		// check counts of requests
-		if count > config.MaxURls {
-			return api.NewError(http.StatusRequestEntityTooLarge, MsgLargeRequest)
+			return err
 		}
 
 		var (
-			results = make([]*types.Result, count)
-			errs    = make([]error, count)
+			res  = make(results, count)
+			errs = make([]error, count)
 			// creating context with cancel func for early exit from the pool
 			poolCtx, poolCancel = context.WithCancel(r.Context())
 			// creating a *pool.Pool instance for goroutines management
@@ -41,24 +30,18 @@ func GetHandler(config Config, f fetcher.Interface) api.Handler {
 		)
 
 		for i, request := range requests {
-			n := i
-			req := *request
+			t := task{
+				Index:   i,
+				Request: *request,
+				Context: poolCtx,
+				Cancel:  poolCancel,
+				Errors:  errs,
+				Results: res,
+				Timeout: config.Timeout,
+				Fetcher: f,
+			}
 
-			wp.Add(func() {
-				ctx, cancel := context.WithTimeout(poolCtx, config.Timeout)
-				defer func() {
-					cancel()
-				}()
-
-				result, err := f.Fetch(ctx, req)
-				if err != nil {
-					errs[n] = err
-					poolCancel()
-					return
-				}
-
-				results[n] = result
-			})
+			wp.Add(t.Worker)
 		}
 
 		wp.Wait()
@@ -70,10 +53,30 @@ func GetHandler(config Config, f fetcher.Interface) api.Handler {
 
 		w.Header().Set("Content-Type", "application/json")
 
-		return json.NewEncoder(w).Encode(results)
+		return json.NewEncoder(w).Encode(res)
 	}
 }
 
+// parseRequest returns []*types.Request from http.Request body and count.
+func parseRequest(config *Config, r *http.Request) (requests []*types.Request, count int, err error) {
+	// decode request
+	err = json.NewDecoder(r.Body).Decode(&requests)
+	if err != nil {
+		return nil, 0, api.NewError(http.StatusBadRequest, MsgDecodeRequest).
+			SetInternal(err)
+	}
+
+	count = len(requests)
+
+	// check counts of requests
+	if count > config.MaxURls {
+		return nil, 0, api.NewError(http.StatusRequestEntityTooLarge, MsgLargeRequest)
+	}
+
+	return
+}
+
+// handleErrors join []errors to one error.
 func handleErrors(count int, errs ...error) error {
 	strErrors := make([]string, 0, count)
 
