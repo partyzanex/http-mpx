@@ -10,7 +10,7 @@ import (
 
 const errFormat = "error: code=%d message=%s internal=%v"
 
-// ErrorHandler implements a api.Middleware function
+// ErrorHandler implements the api.Middleware function
 // that handles the error returned by the wrapped handler
 // and write it to response in JSON format.
 func ErrorHandler(next api.Handler) api.Handler {
