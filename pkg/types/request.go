@@ -4,7 +4,7 @@ import (
 	"net/http"
 )
 
-// Request represents a minimal request item for each URL
+// Request represents the request item for each URL
 // that can be requested.
 type Request struct {
 	// requested URL
