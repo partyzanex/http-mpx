@@ -12,7 +12,7 @@ import (
 // results represents response body.
 type results []json.RawMessage
 
-// task represents a Worker params.
+// task represents the Worker params.
 type task struct {
 	// Index is an element index in slices Errors and Results
 	Index int
@@ -32,7 +32,7 @@ type task struct {
 	Fetcher fetcher.Interface
 }
 
-// Worker implements a pool.Worker.
+// Worker implements the pool.Worker.
 func (t *task) Worker() {
 	// create context with timeout via t.Context as a parent context
 	ctx, cancel := context.WithTimeout(t.Context, t.Timeout)
