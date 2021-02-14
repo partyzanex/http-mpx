@@ -7,7 +7,7 @@ type Error struct {
 	Message  string `json:"message"`
 }
 
-// Error implements of error interface.
+// Error implements the error interface.
 func (e Error) Error() string {
 	return e.Message
 }
