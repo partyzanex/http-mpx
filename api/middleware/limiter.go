@@ -24,7 +24,7 @@ func ConcurrentLimiter(limit int) api.Middleware {
 			defer release()
 
 			err = next(w, r)
-			
+
 			return
 		}
 	}
