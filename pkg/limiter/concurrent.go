@@ -1,6 +1,6 @@
 package limiter
 
-// concurrent implements of Limiter interface
+// concurrent implements the Limiter interface
 // limits the count of calls.
 type concurrent struct {
 	limit int

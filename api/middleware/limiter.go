@@ -13,7 +13,7 @@ func ConcurrentLimiter(limit int) api.Middleware {
 	return func(next api.Handler) api.Handler {
 		lm := limiter.Concurrent(limit)
 
-		return func(w http.ResponseWriter, r *http.Request) error {
+		return func(w http.ResponseWriter, r *http.Request) (err error) {
 			// apply limiter
 			if !lm.Allow() {
 				return api.NewError(http.StatusTooManyRequests, "")
@@ -23,7 +23,9 @@ func ConcurrentLimiter(limit int) api.Middleware {
 			release := lm.Take()
 			defer release()
 
-			return next(w, r)
+			err = next(w, r)
+
+			return
 		}
 	}
 }

@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// Config represent a configuration for http.Server.
+// Config represents the configuration for handler.
 type Config struct {
 	// Outgoing is a count of maximum outgoing requests
 	// for each incoming request

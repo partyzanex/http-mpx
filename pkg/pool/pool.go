@@ -8,7 +8,7 @@ import (
 // WorkerFn is func for concurrently execution.
 type Worker func()
 
-// Pool represents a control component for WorkerFn.
+// Pool represents the control component for WorkerFn.
 type Pool struct {
 	// count of executed WorkerFn at one time
 	size int32
@@ -22,7 +22,7 @@ type Pool struct {
 	ctx context.Context
 }
 
-// done decrements cnt and check it
+// done decrements counter and check it
 // if cnt less or equal than 0 send to wait for unlock.
 func (p *Pool) done() {
 	atomic.AddInt32(&p.counter, -1)
